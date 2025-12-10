@@ -1,30 +1,41 @@
 #include <Adafruit_CircuitPlayground.h>
 
-bool leftButtonPressed;
-bool rightButtonPressed;
+const int NUM_PIXELS = 10;
+
+// SPL range
+const float MIN_DB = 50.0;
+const float MAX_DB = 90.0;
+
+float spl;
 
 void setup() {
   Serial.begin(9600);
   CircuitPlayground.begin();
+  CircuitPlayground.setBrightness(255);
 }
 
 void loop() {
-  leftButtonPressed = CircuitPlayground.leftButton();
-  rightButtonPressed = CircuitPlayground.rightButton();
-  
-  //Serial.print("Left Button: ");
-  if (leftButtonPressed) {
-    Serial.print(1);
-  } else {
-    Serial.print(0);
+  // measure loudness over 10 ms
+  spl = CircuitPlayground.mic.soundPressureLevel(10);
+
+  // print
+  Serial.print("SPL: ");
+  Serial.println(spl);
+
+  // Keep SPL inside range
+  if (spl < MIN_DB) spl = MIN_DB;
+  if (spl > MAX_DB) spl = MAX_DB;
+
+  // Map SPL (50–90) to 0–255 for color wheel
+  int hue = map((int)spl, (int)MIN_DB, (int)MAX_DB, 0, 255);
+
+  // get color
+  long color = CircuitPlayground.colorWheel(hue);
+
+  // sets leds to that color
+  for (int i = 0; i < NUM_PIXELS; i++) {
+    CircuitPlayground.setPixelColor(i, color);
   }
-  
-  if (rightButtonPressed) {
-    Serial.print(2);
-  } else {
-    Serial.print(0);
-  }
-  Serial.println();
-  
-  delay(1000);
+
+  delay(20);
 }
